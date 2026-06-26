@@ -53,17 +53,17 @@ export default function RiwayatPage() {
 
   return (
     <div className="grid-2" style={{ alignItems: 'start' }}>
-      {/* List riwayat — scrollable */}
+
+      {/* List riwayat */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.5rem 0.5rem' }}>
-          <p className="section-label"> Riwayat pemeriksaan</p>
+          <p className="section-label">Riwayat pemeriksaan</p>
           <p style={{ fontSize: 12, color: '#aaa', marginTop: -8 }}>{data.length} data tersimpan</p>
         </div>
         <div style={{ maxHeight: 520, overflowY: 'auto', padding: '0 1.5rem 1rem' }}>
           {data.map(item => (
             <div
               key={item.id}
-              className="riwayat-item"
               onClick={() => setDipilih(item)}
               style={{
                 background: dipilih?.id === item.id ? '#f5f5f0' : 'transparent',
@@ -71,11 +71,23 @@ export default function RiwayatPage() {
                 padding: '10px 8px',
                 margin: '2px -8px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
               }}
             >
-              <div style={{ width: 46, height: 46, borderRadius: 8, background: '#f0f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                🐐
+              {/* Foto thumbnail dari Supabase Storage */}
+              <div style={{
+                width: 46, height: 46, borderRadius: 8,
+                background: '#f0f0eb', flexShrink: 0, overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {item.foto_url
+                  ? <img src={item.foto_url} alt="kambing" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: 22 }}>🐐</span>
+                }
               </div>
+
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong style={{ fontSize: 14, display: 'block' }}>{item.jenis_kambing || 'Kambing'}</strong>
                 <span style={{ fontSize: 12, color: '#888' }}>{formatTanggal(item.created_at)}</span>
@@ -88,7 +100,7 @@ export default function RiwayatPage() {
 
       {/* Detail */}
       <div className="card" style={{ minHeight: 300, position: 'sticky', top: 72 }}>
-        <p className="section-label"> Detail pemeriksaan</p>
+        <p className="section-label">Detail pemeriksaan</p>
         {!dipilih ? (
           <div className="empty-state">
             <div className="icon"></div>
@@ -96,6 +108,15 @@ export default function RiwayatPage() {
           </div>
         ) : (
           <div>
+            {/* Foto detail dari Supabase Storage */}
+            {dipilih.foto_url && (
+              <img
+                src={dipilih.foto_url}
+                alt="kambing"
+                style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 10, marginBottom: 16 }}
+              />
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #f0f0eb' }}>
               <div>
                 <p style={{ fontWeight: 600 }}>{dipilih.jenis_kambing || 'Kambing'}</p>
@@ -116,7 +137,7 @@ export default function RiwayatPage() {
               </div>
             )}
 
-            {dipilih.layak_kurban !== null && (
+            {dipilih.layak_kurban !== null && dipilih.layak_kurban !== undefined && (
               <div style={{ marginBottom: 10 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>Layak kurban</p>
                 {dipilih.layak_kurban
@@ -135,7 +156,7 @@ export default function RiwayatPage() {
 
             {dipilih.rekomendasi && (
               <div style={{ marginTop: 14, padding: '12px 14px', background: '#f5f5f0', borderRadius: 8 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}> Rekomendasi</p>
+                <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Rekomendasi</p>
                 <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>{dipilih.rekomendasi}</p>
               </div>
             )}

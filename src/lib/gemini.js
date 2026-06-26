@@ -193,15 +193,18 @@ Balas HANYA dengan JSON berikut, tanpa teks lain:
 }
 `;
 
-  const isRateLimit = (err) => {
-    const msg = err?.message || "";
-    return (
-      msg.includes("429") ||
-      msg.toLowerCase().includes("quota") ||
-      msg.toLowerCase().includes("rate limit") ||
-      msg.toLowerCase().includes("resource has been exhausted")
-    );
-  };
+const isRateLimit = (err) => {
+  const msg = err?.message || "";
+  return (
+    msg.includes("429") ||
+    msg.includes("503") ||
+    msg.toLowerCase().includes("quota") ||
+    msg.toLowerCase().includes("rate limit") ||
+    msg.toLowerCase().includes("resource has been exhausted") ||
+    msg.toLowerCase().includes("high demand") ||
+    msg.toLowerCase().includes("try again later")
+  );
+};
 
   // 1. Coba semua model Gemini dulu
   for (const modelName of GEMINI_MODELS) {
