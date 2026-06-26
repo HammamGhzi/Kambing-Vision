@@ -447,7 +447,7 @@ export default function AnalisisPage() {
                   borderRadius: 8,
                 }}
               >
-                🔄 <strong>Reset otomatis:</strong>
+                 <strong>Reset otomatis:</strong>
                 <br />
                 {tokenPesan}
               </div>
