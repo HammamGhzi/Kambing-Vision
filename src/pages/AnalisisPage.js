@@ -114,7 +114,6 @@ export default function AnalisisPage() {
     startCamera();
   }
 
-  // Upload foto ke Supabase Storage, return public URL
   async function uploadFotoSupabase(base64, mime) {
     try {
       const fileName = `kambing_${Date.now()}.jpg`;
@@ -175,7 +174,6 @@ export default function AnalisisPage() {
       });
       setHasil(data);
 
-      // Upload foto ke Supabase Storage
       const fotoUrl = await uploadFotoSupabase(imageBase64, mimeType);
 
       await supabase.from("pemeriksaan").insert({
@@ -188,10 +186,12 @@ export default function AnalisisPage() {
         layak_kurban: cekKurban ? data.layak_kurban : null,
         rekomendasi: data.rekomendasi,
         hasil_lengkap: data,
-        foto_url: fotoUrl, // URL publik dari Supabase Storage (bisa null kalau gagal upload)
+        foto_url: fotoUrl,
       });
     } catch (err) {
-      if (err.isTokenHabis) {
+      if (err.bukanKambing) {
+        setError(err.message);
+      } else if (err.isTokenHabis) {
         setTokenHabis(true);
         const usage = getUsageInfo();
         setTokenPesan(
@@ -426,7 +426,12 @@ export default function AnalisisPage() {
             </div>
           )}
 
-          {error && <div className="alert alert-red">{error}</div>}
+          {error && (
+            <div className="alert alert-red">
+              <div style={{ fontSize: 16, marginBottom: 4 }}>⚠️</div>
+              {error}
+            </div>
+          )}
 
           {tokenHabis && (
             <div className="alert alert-red" style={{ lineHeight: 1.7 }}>

@@ -5,7 +5,6 @@ const GEMINI_KEY = process.env.REACT_APP_GEMINI_KEY;
 const OPENROUTER_KEY = process.env.REACT_APP_OPENROUTER_KEY;
 
 // ── Model fallback list ─────────────────────────────────────────────────────
-// Coba Gemini dulu, kalau semua limit baru pindah ke OpenRouter
 const GEMINI_MODELS = [
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash-lite",
@@ -90,7 +89,75 @@ function tambahUsage() {
   } catch {}
 }
 
-// ── Coba via Gemini SDK ─────────────────────────────────────────────────────
+// ── Prompt ──────────────────────────────────────────────────────────────────
+function buildPrompt(jenisKambing, cekKurban, cekHarga) {
+  return `
+Kamu adalah dokter hewan berpengalaman yang ahli dalam kesehatan ternak kambing dan domba di Indonesia.
+
+LANGKAH PERTAMA — Validasi gambar:
+Periksa dengan teliti apakah foto ini menampilkan kambing atau domba.
+Jika BUKAN kambing atau domba (misalnya foto manusia, kucing, anjing, sapi, kuda, pemandangan, benda, dll), balas HANYA dengan JSON ini:
+{
+  "bukan_kambing": true,
+  "pesan": "Foto yang diunggah bukan kambing atau domba. Mohon upload foto kambing atau domba yang jelas."
+}
+
+Jika foto memang kambing atau domba, lanjutkan analisis lengkap dan balas HANYA dengan JSON berikut:
+{
+  "bukan_kambing": false,
+  "status": "Sehat" | "Perlu Perhatian" | "Sakit",
+  "kepercayaan": angka_persen_0_sampai_100,
+  "kondisi_fisik": "deskripsi singkat kondisi fisik",
+  "perkiraan_usia": "contoh: 1.5 - 2 tahun",
+  "perkiraan_berat": "contoh: 25 - 30 kg",
+  "penyakit_terdeteksi": true | false,
+  "nama_penyakit": "nama penyakit atau null jika sehat",
+  "gejala": ["gejala 1", "gejala 2"],
+  "solusi_pengobatan": "langkah pengobatan atau null jika sehat",
+  "layak_kurban": true | false | null,
+  "alasan_kurban": "penjelasan kelayakan kurban atau null",
+  "harga_min": angka_dalam_rupiah atau null,
+  "harga_max": angka_dalam_rupiah atau null,
+  "rekomendasi": "saran perawatan atau tindakan selanjutnya"
+}
+
+Jenis kambing (jika diketahui): ${jenisKambing || "tidak diketahui"}
+Cek kelayakan kurban: ${cekKurban ? "ya" : "tidak"}
+Sertakan estimasi harga: ${cekHarga ? "ya" : "tidak"}
+
+Balas HANYA dengan JSON, tanpa teks lain, tanpa markdown.
+`;
+}
+
+// ── Rate limit check ─────────────────────────────────────────────────────────
+const isRateLimit = (err) => {
+  const msg = err?.message || "";
+  return (
+    msg.includes("429") ||
+    msg.includes("503") ||
+    msg.toLowerCase().includes("quota") ||
+    msg.toLowerCase().includes("rate limit") ||
+    msg.toLowerCase().includes("resource has been exhausted") ||
+    msg.toLowerCase().includes("high demand") ||
+    msg.toLowerCase().includes("try again later")
+  );
+};
+
+// ── Parse & validasi response ────────────────────────────────────────────────
+function parseAndValidate(text) {
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  const parsed = JSON.parse(cleaned);
+
+  if (parsed.bukan_kambing === true) {
+    const err = new Error(parsed.pesan || "Foto yang diunggah bukan kambing atau domba. Mohon upload foto kambing atau domba yang jelas.");
+    err.bukanKambing = true;
+    throw err;
+  }
+
+  return parsed;
+}
+
+// ── Coba via Gemini SDK ──────────────────────────────────────────────────────
 async function cobaGemini(modelName, prompt, imageBase64, mimeType) {
   const genAI = new GoogleGenerativeAI(GEMINI_KEY);
   const model = genAI.getGenerativeModel({ model: modelName });
@@ -99,11 +166,10 @@ async function cobaGemini(modelName, prompt, imageBase64, mimeType) {
     { inlineData: { data: imageBase64, mimeType: mimeType || "image/jpeg" } },
   ]);
   const text = result.response.text();
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
+  return parseAndValidate(text);
 }
 
-// ── Coba via OpenRouter ─────────────────────────────────────────────────────
+// ── Coba via OpenRouter ──────────────────────────────────────────────────────
 async function cobaOpenRouter(modelName, prompt, imageBase64, mimeType) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -144,11 +210,10 @@ async function cobaOpenRouter(modelName, prompt, imageBase64, mimeType) {
   }
 
   const text = data.choices?.[0]?.message?.content || "";
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
+  return parseAndValidate(text);
 }
 
-// ── Fungsi utama ────────────────────────────────────────────────────────────
+// ── Fungsi utama ─────────────────────────────────────────────────────────────
 export async function analisisKambing({
   imageBase64,
   mimeType,
@@ -165,46 +230,7 @@ export async function analisisKambing({
     throw err;
   }
 
-  const prompt = `
-Kamu adalah dokter hewan berpengalaman yang ahli dalam kesehatan ternak kambing dan domba di Indonesia.
-
-Analisis foto kambing ini secara menyeluruh dan berikan hasil dalam format JSON yang valid.
-
-Jenis kambing (jika diketahui): ${jenisKambing || "tidak diketahui"}
-Cek kelayakan kurban: ${cekKurban ? "ya" : "tidak"}
-Sertakan estimasi harga: ${cekHarga ? "ya" : "tidak"}
-
-Balas HANYA dengan JSON berikut, tanpa teks lain:
-{
-  "status": "Sehat" | "Perlu Perhatian" | "Sakit",
-  "kepercayaan": angka_persen_0_sampai_100,
-  "kondisi_fisik": "deskripsi singkat kondisi fisik",
-  "perkiraan_usia": "contoh: 1.5 - 2 tahun",
-  "perkiraan_berat": "contoh: 25 - 30 kg",
-  "penyakit_terdeteksi": true | false,
-  "nama_penyakit": "nama penyakit atau null jika sehat",
-  "gejala": ["gejala 1", "gejala 2"] atau [],
-  "solusi_pengobatan": "langkah pengobatan atau null jika sehat",
-  "layak_kurban": true | false | null,
-  "alasan_kurban": "penjelasan kelayakan kurban atau null",
-  "harga_min": angka_dalam_rupiah atau null,
-  "harga_max": angka_dalam_rupiah atau null,
-  "rekomendasi": "saran perawatan atau tindakan selanjutnya"
-}
-`;
-
-const isRateLimit = (err) => {
-  const msg = err?.message || "";
-  return (
-    msg.includes("429") ||
-    msg.includes("503") ||
-    msg.toLowerCase().includes("quota") ||
-    msg.toLowerCase().includes("rate limit") ||
-    msg.toLowerCase().includes("resource has been exhausted") ||
-    msg.toLowerCase().includes("high demand") ||
-    msg.toLowerCase().includes("try again later")
-  );
-};
+  const prompt = buildPrompt(jenisKambing, cekKurban, cekHarga);
 
   // 1. Coba semua model Gemini dulu
   for (const modelName of GEMINI_MODELS) {
@@ -213,6 +239,7 @@ const isRateLimit = (err) => {
       tambahUsage();
       return data;
     } catch (err) {
+      if (err.bukanKambing) throw err; // langsung lempar, jangan coba model lain
       if (isRateLimit(err)) continue;
       throw err;
     }
@@ -225,6 +252,7 @@ const isRateLimit = (err) => {
       tambahUsage();
       return data;
     } catch (err) {
+      if (err.bukanKambing) throw err; // langsung lempar, jangan coba model lain
       if (isRateLimit(err)) continue;
       throw err;
     }
