@@ -1,4 +1,4 @@
-# KambingAI 🐐
+# KambingAI 
 
 Aplikasi web AI untuk mendeteksi penyakit kambing, cek kelayakan kurban, dan estimasi harga jual menggunakan **Google Gemini Vision** + **Supabase**.
 
