@@ -1,0 +1,176 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f5f5f0;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Header */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e5e5e0;
+  position: sticky; top: 0; z-index: 10;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo-icon { font-size: 24px; }
+.logo-text { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+.nav { display: flex; gap: 4px; }
+.nav-btn {
+  padding: 6px 16px; border-radius: 8px;
+  border: none; background: transparent;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  color: #666; transition: all .15s;
+}
+.nav-btn:hover { background: #f0f0eb; color: #1a1a1a; }
+.nav-btn.active { background: #1a1a1a; color: #fff; }
+
+/* Main */
+.main { flex: 1; max-width: 960px; margin: 0 auto; width: 100%; padding: 2rem 1.5rem; }
+
+/* Footer */
+.footer { text-align: center; padding: 1.5rem; font-size: 13px; color: #999; border-top: 1px solid #e5e5e0; background: #fff; }
+
+/* Cards */
+.card {
+  background: #fff; border-radius: 12px;
+  border: 1px solid #e5e5e0; padding: 1.5rem;
+}
+.card + .card { margin-top: 1rem; }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* Section title */
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: #999; margin-bottom: 12px;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 12px; border-radius: 8px;
+  background: #1a1a1a; color: #fff; border: none;
+  font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity .15s;
+}
+.btn-primary:hover { opacity: .85; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-outline {
+  width: 100%; padding: 10px; border-radius: 8px;
+  background: transparent; color: #1a1a1a;
+  border: 1px solid #ddd; font-size: 14px; cursor: pointer; transition: background .15s;
+}
+.btn-outline:hover { background: #f5f5f0; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed #ddd; border-radius: 10px;
+  padding: 2rem; text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 12px;
+}
+.upload-zone:hover { border-color: #999; background: #fafafa; }
+.upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+.upload-zone p { font-size: 14px; color: #666; }
+.upload-zone small { font-size: 12px; color: #aaa; margin-top: 4px; display: block; }
+
+/* Preview image */
+.preview-img {
+  width: 100%; max-height: 240px; object-fit: cover;
+  border-radius: 8px; margin-bottom: 12px; display: block;
+}
+
+/* Tab switcher */
+.tab-group { display: flex; gap: 6px; margin-bottom: 1rem; }
+.tab-btn {
+  flex: 1; padding: 8px; border-radius: 8px;
+  border: 1px solid #e5e5e0; background: transparent;
+  font-size: 13px; font-weight: 500; cursor: pointer; color: #666;
+}
+.tab-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+
+/* Select */
+.select-input {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid #e5e5e0; background: #fff;
+  font-size: 14px; color: #1a1a1a; margin-bottom: 12px;
+  appearance: none; cursor: pointer;
+}
+
+/* Checkbox row */
+.check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; font-size: 14px;
+}
+.check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #1a1a1a; cursor: pointer; }
+
+/* Badges */
+.badge {
+  display: inline-block; font-size: 12px; font-weight: 600;
+  padding: 3px 10px; border-radius: 20px;
+}
+.badge-green { background: #e6f4ee; color: #166534; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-gray { background: #f1f1eb; color: #555; }
+
+/* Result rows */
+.result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #f0f0eb; font-size: 14px;
+}
+.result-row:last-child { border-bottom: none; }
+.result-label { color: #666; }
+.result-value { font-weight: 500; }
+
+/* Price bar */
+.price-bar { height: 6px; background: #f0f0eb; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.price-fill { height: 100%; background: #1a7a4a; border-radius: 3px; transition: width .4s ease; }
+
+/* Alert boxes */
+.alert { border-radius: 8px; padding: 12px 14px; font-size: 13px; margin: 12px 0; }
+.alert-warning { background: #fef9c3; color: #854d0e; }
+.alert-red { background: #fee2e2; color: #991b1b; }
+.alert-green { background: #e6f4ee; color: #166534; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 3rem 1rem; color: #aaa; }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* Spinner */
+.spinner-wrap { text-align: center; padding: 2rem; }
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid #e5e5e0; border-top-color: #1a1a1a;
+  animation: spin .7s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Camera */
+.camera-feed {
+  width: 100%; max-height: 240px; object-fit: cover;
+  border-radius: 8px; margin-bottom: 12px; background: #000;
+}
+
+/* Riwayat table */
+.riwayat-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid #f0f0eb; cursor: pointer;
+}
+.riwayat-item:hover { background: #fafafa; margin: 0 -1.5rem; padding: 12px 1.5rem; border-radius: 0; }
+.riwayat-item:last-child { border-bottom: none; }
+.riwayat-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; background: #f0f0eb; flex-shrink: 0; }
+.riwayat-info { flex: 1; }
+.riwayat-info strong { font-size: 14px; display: block; }
+.riwayat-info span { font-size: 12px; color: #888; }
