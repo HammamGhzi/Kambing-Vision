@@ -11,6 +11,8 @@ Aplikasi web AI untuk mendeteksi penyakit kambing, cek kelayakan kurban, dan est
 - Cek kelayakan hewan kurban
 - Estimasi rentang harga jual
 - Riwayat pemeriksaan tersimpan di Supabase
+- Estimasi tinggi kambing dari foto memakai marker A4
+- Backend Python opsional untuk menghitung tinggi dari titik ukur marker
 
 ---
 
@@ -82,6 +84,24 @@ npm start
 ```
 
 Buka http://localhost:3000
+
+### 6. Jalankan backend Python estimasi tinggi (opsional)
+
+Backend Python dipakai saat tombol **Hitung tinggi dari marker** ditekan. Kalau backend belum jalan, aplikasi tetap menghitung dari browser.
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Jika ingin memakai URL backend lain, tambahkan di `.env`:
+
+```bash
+REACT_APP_HEIGHT_API_URL=http://localhost:8000
+```
 
 ---
 

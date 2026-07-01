@@ -28,6 +28,7 @@ export default function HasilAnalisis({ data, cekKurban, cekHarga }) {
   const hargaFill = data.harga_max
     ? Math.min(100, Math.round((data.harga_max / 10000000) * 100))
     : 0
+  const hasKurbanResult = typeof data.layak_kurban === 'boolean'
 
   return (
     <div>
@@ -45,6 +46,7 @@ export default function HasilAnalisis({ data, cekKurban, cekHarga }) {
 
       {/* Data fisik */}
       <InfoRow label="Kondisi fisik">{data.kondisi_fisik}</InfoRow>
+      <InfoRow label="Perkiraan tinggi">{data.perkiraan_tinggi || '-'}</InfoRow>
       <InfoRow label="Perkiraan usia">{data.perkiraan_usia}</InfoRow>
       <InfoRow label="Perkiraan berat">{data.perkiraan_berat}</InfoRow>
       <InfoRow label="Indikasi penyakit">
@@ -68,12 +70,21 @@ export default function HasilAnalisis({ data, cekKurban, cekHarga }) {
       )}
 
       {/* Kurban */}
-      {cekKurban && data.layak_kurban !== null && (
+      {cekKurban && hasKurbanResult && (
         <div className={`alert ${data.layak_kurban ? 'alert-green' : 'alert-warning'}`} style={{ marginTop: 12 }}>
           <p style={{ fontWeight: 600, marginBottom: 4 }}>
             {data.layak_kurban ? ' Layak kurban' : ' Belum layak kurban'}
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6 }}>{data.alasan_kurban}</p>
+        </div>
+      )}
+
+      {cekKurban && !hasKurbanResult && (
+        <div className="alert alert-warning" style={{ marginTop: 12 }}>
+          <p style={{ fontWeight: 600, marginBottom: 4 }}>Kelayakan kurban belum bisa dinilai</p>
+          <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+            Foto atau data belum cukup jelas. Coba pakai foto samping seluruh badan dan isi usia/berat jika tersedia.
+          </p>
         </div>
       )}
 

@@ -90,17 +90,27 @@ function tambahUsage() {
 }
 
 // ── Prompt ──────────────────────────────────────────────────────────────────
-function buildPrompt(jenisKambing, cekKurban, cekHarga) {
+function buildPrompt(jenisKambing, cekKurban, cekHarga, jumlahFoto = 1, tinggiBadanCm, beratBadanKg) {
+  const infoTinggi = tinggiBadanCm
+    ? `${tinggiBadanCm} cm, diukur dari tanah sampai punggung/pundak hewan saat kamera digunakan`
+    : "tidak tersedia";
+  const infoBerat = beratBadanKg
+    ? `${beratBadanKg} kg, diinput manual oleh pengguna/peternak`
+    : "tidak tersedia";
+
   return `
 Kamu adalah dokter hewan berpengalaman yang ahli dalam kesehatan ternak kambing dan domba di Indonesia.
 
 LANGKAH PERTAMA — Validasi gambar:
-Periksa dengan teliti apakah foto ini menampilkan kambing atau domba.
+Periksa dengan teliti apakah foto yang dikirim menampilkan kambing atau domba.
 Jika BUKAN kambing atau domba (misalnya foto manusia, kucing, anjing, sapi, kuda, pemandangan, benda, dll), balas HANYA dengan JSON ini:
 {
   "bukan_kambing": true,
   "pesan": "Foto yang diunggah bukan kambing atau domba. Mohon upload foto kambing atau domba yang jelas."
 }
+
+Jumlah foto yang dikirim: ${jumlahFoto}.
+Jika ada lebih dari satu foto, gunakan semua sudut pandang sebagai bahan analisis. Bandingkan kondisi tubuh, mata, mulut, kaki, kulit/bulu, postur, dan tanda luka/gejala dari seluruh foto. Jika kualitas sebagian foto kurang jelas, tetap analisis dari foto yang paling jelas dan sebutkan keterbatasannya di rekomendasi.
 
 Jika foto memang kambing atau domba, lanjutkan analisis lengkap dan balas HANYA dengan JSON berikut:
 {
@@ -108,8 +118,9 @@ Jika foto memang kambing atau domba, lanjutkan analisis lengkap dan balas HANYA 
   "status": "Sehat" | "Perlu Perhatian" | "Sakit",
   "kepercayaan": angka_persen_0_sampai_100,
   "kondisi_fisik": "deskripsi singkat kondisi fisik",
-  "perkiraan_usia": "contoh: 1.5 - 2 tahun",
-  "perkiraan_berat": "contoh: 25 - 30 kg",
+  "perkiraan_tinggi": "rentang tinggi badan atau tinggi terukur, contoh format: 65 - 70 cm",
+  "perkiraan_usia": "rentang usia hasil estimasi, contoh format: 1.5 - 2 tahun",
+  "perkiraan_berat": "rentang berat hasil estimasi, contoh format: 25 - 30 kg",
   "penyakit_terdeteksi": true | false,
   "nama_penyakit": "nama penyakit atau null jika sehat",
   "gejala": ["gejala 1", "gejala 2"],
@@ -124,6 +135,24 @@ Jika foto memang kambing atau domba, lanjutkan analisis lengkap dan balas HANYA 
 Jenis kambing (jika diketahui): ${jenisKambing || "tidak diketahui"}
 Cek kelayakan kurban: ${cekKurban ? "ya" : "tidak"}
 Sertakan estimasi harga: ${cekHarga ? "ya" : "tidak"}
+Tinggi badan terukur dari kamera/pengguna: ${infoTinggi}
+Berat badan terukur/manual dari pengguna: ${infoBerat}
+
+Aturan khusus kelayakan kurban:
+- Jika Cek kelayakan kurban = ya, isi "layak_kurban" dengan true atau false, jangan null.
+- Jika Cek kelayakan kurban = ya, isi "alasan_kurban" dengan alasan jelas berdasarkan kesehatan, usia/perkiraan usia, kondisi fisik, cacat/luka, dan kecukupan fisik.
+- Jika Cek kelayakan kurban = tidak, isi "layak_kurban" dan "alasan_kurban" dengan null.
+
+Aturan khusus estimasi usia dan berat:
+- Jangan menyalin contoh. Isi "perkiraan_usia" dan "perkiraan_berat" dengan estimasi nyata dari foto.
+- Isi "perkiraan_tinggi" dengan tinggi terukur jika tersedia. Jika tidak tersedia, estimasikan dari foto dengan satuan cm.
+- Jika berat badan manual tersedia, isi "perkiraan_berat" dengan berat tersebut atau rentang sangat dekat dari nilai tersebut, lalu gunakan sebagai acuan utama untuk harga dan kelayakan.
+- Perkirakan usia dari ukuran tubuh relatif, tinggi badan, proporsi kepala-kaki-badan, kondisi tanduk, gigi/mulut jika terlihat, massa otot, dan kematangan tubuh. Jika jenis kambing diketahui, sesuaikan dengan karakter umum jenis tersebut.
+- Perkirakan berat dari tinggi/panjang badan, lebar dada, kepadatan otot, body condition score, perut, dan perbandingan skala dengan objek sekitar. Jika tinggi badan terukur tersedia, jadikan itu acuan utama untuk menyempitkan rentang berat. Gunakan semua foto untuk menyempitkan rentang.
+- Jika foto jelas dan seluruh badan terlihat, buat rentang cukup sempit: usia maksimal selisih 0.5 tahun untuk anakan/muda atau 1 tahun untuk dewasa; berat maksimal selisih 5 kg untuk kambing kecil-sedang atau 8 kg untuk kambing besar.
+- Jika foto kurang jelas, sebagian tubuh terpotong, atau tidak ada pembanding ukuran, tetap beri estimasi terbaik tetapi rentang boleh lebih lebar dan jelaskan keterbatasannya di "rekomendasi".
+- Gunakan satuan "bulan" untuk usia di bawah 1 tahun, dan "tahun" untuk usia 1 tahun ke atas. Gunakan satuan "kg" untuk berat.
+- Pastikan estimasi tinggi, usia, dan berat masuk akal satu sama lain serta konsisten dengan kondisi fisik, kelayakan kurban, dan harga.
 
 Balas HANYA dengan JSON, tanpa teks lain, tanpa markdown.
 `;
@@ -157,20 +186,39 @@ function parseAndValidate(text) {
   return parsed;
 }
 
+function normalizeImages({ images, imageBase64, mimeType }) {
+  if (Array.isArray(images) && images.length > 0) {
+    return images
+      .filter((img) => img?.base64)
+      .map((img) => ({
+        base64: img.base64,
+        mimeType: img.mimeType || "image/jpeg",
+      }));
+  }
+
+  if (imageBase64) {
+    return [{ base64: imageBase64, mimeType: mimeType || "image/jpeg" }];
+  }
+
+  return [];
+}
+
 // ── Coba via Gemini SDK ──────────────────────────────────────────────────────
-async function cobaGemini(modelName, prompt, imageBase64, mimeType) {
+async function cobaGemini(modelName, prompt, images) {
   const genAI = new GoogleGenerativeAI(GEMINI_KEY);
   const model = genAI.getGenerativeModel({ model: modelName });
   const result = await model.generateContent([
     prompt,
-    { inlineData: { data: imageBase64, mimeType: mimeType || "image/jpeg" } },
+    ...images.map((img) => ({
+      inlineData: { data: img.base64, mimeType: img.mimeType || "image/jpeg" },
+    })),
   ]);
   const text = result.response.text();
   return parseAndValidate(text);
 }
 
 // ── Coba via OpenRouter ──────────────────────────────────────────────────────
-async function cobaOpenRouter(modelName, prompt, imageBase64, mimeType) {
+async function cobaOpenRouter(modelName, prompt, images) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -186,10 +234,10 @@ async function cobaOpenRouter(modelName, prompt, imageBase64, mimeType) {
           role: "user",
           content: [
             { type: "text", text: prompt },
-            {
+            ...images.map((img) => ({
               type: "image_url",
-              image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` },
-            },
+              image_url: { url: `data:${img.mimeType || "image/jpeg"};base64,${img.base64}` },
+            })),
           ],
         },
       ],
@@ -215,11 +263,14 @@ async function cobaOpenRouter(modelName, prompt, imageBase64, mimeType) {
 
 // ── Fungsi utama ─────────────────────────────────────────────────────────────
 export async function analisisKambing({
+  images,
   imageBase64,
   mimeType,
   jenisKambing,
   cekKurban,
   cekHarga,
+  tinggiBadanCm,
+  beratBadanKg,
 }) {
   const usage = getUsageInfo();
   if (usage.tokenHabis) {
@@ -230,12 +281,17 @@ export async function analisisKambing({
     throw err;
   }
 
-  const prompt = buildPrompt(jenisKambing, cekKurban, cekHarga);
+  const imageParts = normalizeImages({ images, imageBase64, mimeType });
+  if (imageParts.length === 0) {
+    throw new Error("Minimal satu foto kambing wajib dikirim.");
+  }
+
+  const prompt = buildPrompt(jenisKambing, cekKurban, cekHarga, imageParts.length, tinggiBadanCm, beratBadanKg);
 
   // 1. Coba semua model Gemini dulu
   for (const modelName of GEMINI_MODELS) {
     try {
-      const data = await cobaGemini(modelName, prompt, imageBase64, mimeType);
+      const data = await cobaGemini(modelName, prompt, imageParts);
       tambahUsage();
       return data;
     } catch (err) {
@@ -248,7 +304,7 @@ export async function analisisKambing({
   // 2. Semua Gemini limit, fallback ke OpenRouter
   for (const modelName of OPENROUTER_MODELS) {
     try {
-      const data = await cobaOpenRouter(modelName, prompt, imageBase64, mimeType);
+      const data = await cobaOpenRouter(modelName, prompt, imageParts);
       tambahUsage();
       return data;
     } catch (err) {
